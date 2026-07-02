@@ -1,6 +1,6 @@
 # lernhelden_4
 
-LernHeld ist eine Lernplattform fuer Kinder von 8-14 Jahren mit Lerntechniken,
+LernHeld ist eine Lernplattform mit Lerntechniken,
 einer interaktiven Lern-App zur Hausaufgabenanalyse und einem Bereich zu KI-Sicherheit.
 
 ## Projektstruktur
