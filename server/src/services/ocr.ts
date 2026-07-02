@@ -1,13 +1,31 @@
-import Tesseract from 'tesseract.js';
-import sharp from 'sharp';
+import { Mistral } from '@mistralai/mistralai';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const client = new Mistral({ apiKey: process.env.MISTRAL_API_KEY });
 
 export async function extractTextFromImage(buffer: Buffer): Promise<string> {
-  const processed = await sharp(buffer)
-    .grayscale()
-    .normalize()
-    .resize({ width: 1600, withoutEnlargement: false })
-    .toBuffer();
+  const base64Image = buffer.toString('base64');
 
-  const { data } = await Tesseract.recognize(processed, 'deu+eng');
-  return (data.text || '').trim();
+  const response = await client.chat.complete({
+    model: 'pixtral-12b-2409',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: 'Transkribiere den gesamten Text (auch handschriftlich) aus diesem Foto einer Hausaufgabe exakt und vollständig. Antworte NUR mit dem erkannten Text, ohne Einleitung oder Kommentar.'
+          },
+          {
+            type: 'image_url',
+            imageUrl: `data:image/jpeg;base64,${base64Image}`
+          }
+        ]
+      }
+    ]
+  });
+
+  const content = response.choices?.[0]?.message?.content;
+  return typeof content === 'string' ? content.trim() : '';
 }
