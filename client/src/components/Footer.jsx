@@ -10,6 +10,7 @@ export default function Footer() {
         </div>
         <div style={{ color: 'var(--color-text-light)', fontSize: '.92rem' }}>
           <div>© 2026 LernHeld</div>
+          <div>Bernd Trißler</div>
           <div>Datenschutzfreundlich & ohne Registrierung</div>
         </div>
       </div>
