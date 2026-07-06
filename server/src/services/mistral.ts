@@ -86,3 +86,25 @@ export async function generateFlashcardsFromImage(buffer: Buffer): Promise<{ fro
     return [];
   }
 }
+export async function generateThemeExamples(thema: string, techniken: { id: string; name: string; kurzbeschreibung: string }[]): Promise<Record<string, string[]>> {
+  const techListe = techniken.map(t => `- ${t.id}: ${t.name} (${t.kurzbeschreibung})`).join('\n');
+
+  const response = await client.chat.complete({
+    model: 'mistral-small-latest',
+    messages: [
+      {
+        role: 'user',
+        content: `Thema: "${thema}"\n\nHier ist eine Liste von Lerntechniken:\n${techListe}\n\nErstelle für JEDE Technik genau 3 konkrete, kurze Beispielaufgaben, wie man das Thema "${thema}" mit dieser Technik lernen könnte. Antworte NUR mit einem JSON-Objekt, bei dem die Schlüssel die Technik-IDs sind und die Werte Arrays mit 3 Beispiel-Strings, z. B.:\n{"loci":["Beispiel 1","Beispiel 2","Beispiel 3"],"mindmap":["...","...","..."]}`
+      }
+    ]
+  });
+
+  const content = response.choices?.[0]?.message?.content;
+  const raw = typeof content === 'string' ? content : '{}';
+  try {
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    return jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+  } catch {
+    return {};
+  }
+}

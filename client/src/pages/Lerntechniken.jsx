@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { LERNTECHNIKEN } from '../data/lerntechniken.js';
 import { MASTERFAEHIGKEITEN } from '../data/masterfaehigkeiten.js';
 import Karteikasten from '../components/Karteikasten.jsx';
+
+const API_BASE = 'https://lernheldenserver.onrender.com';
+
 const AUFGABENTYPEN = [
   {id:'alle',label:'🔍 Alle Techniken'},{id:'vokabeln',label:'🔤 Vokabeln'},{id:'fakten',label:'📌 Fakten'},
   {id:'prozesse',label:'🔬 Prozesse'},{id:'textverstaendnis',label:'📖 Texte'},{id:'referat',label:'🎤 Referate'},{id:'pruefungsvorbereitung',label:'📝 Prüfungen'}
@@ -19,11 +22,27 @@ const FAECHER = [
 
 const ZEITOPTIONEN = [5, 10, 15, 20, 30, 60];
 
+const THEMEN_VORSCHLAEGE = [
+  'Deutsche Flüsse',
+  'Europäische Bergketten',
+  'Internationale Berge',
+  'Französische Vokabeln',
+  'Zweiter Weltkrieg',
+  'Photosynthese',
+  'Bruchrechnen'
+];
+
 export default function Lerntechniken() {
   const [filter, setFilter] = useState('alle');
   const [open, setOpen] = useState(null);
   const [fach, setFach] = useState(null);
   const [zeit, setZeit] = useState(null);
+  const [thema, setThema] = useState('');
+  const [themaEingabe, setThemaEingabe] = useState('');
+  const [themenBeispiele, setThemenBeispiele] = useState({});
+  const [ladeThema, setLadeThema] = useState(false);
+  const [themaFehler, setThemaFehler] = useState('');
+
   const mfColors = Object.fromEntries(MASTERFAEHIGKEITEN.map(m => [m.id, m.farbe]));
   const mfEmoji = Object.fromEntries(MASTERFAEHIGKEITEN.map(m => [m.id, m.emoji]));
 
@@ -38,6 +57,38 @@ export default function Lerntechniken() {
       .slice(0, 3);
   }, [fach, zeit]);
 
+  async function themaAnwenden(gewaehltesThema) {
+    const finalesThema = (gewaehltesThema ?? themaEingabe).trim();
+    if (finalesThema.length < 2) {
+      setThemaFehler('Bitte gib ein Thema mit mindestens 2 Zeichen ein.');
+      return;
+    }
+    setLadeThema(true);
+    setThemaFehler('');
+    try {
+      const techniken = LERNTECHNIKEN.map(t => ({ id: t.id, name: t.name, kurzbeschreibung: t.kurzbeschreibung }));
+      const res = await fetch(`${API_BASE}/api/themenbeispiele/generieren`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ thema: finalesThema, techniken })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Fehler beim Generieren der Beispiele.');
+      setThemenBeispiele(data.beispiele || {});
+      setThema(finalesThema);
+    } catch (err) {
+      setThemaFehler(err.message);
+    } finally {
+      setLadeThema(false);
+    }
+  }
+
+  function themaZuruecksetzen() {
+    setThema('');
+    setThemenBeispiele({});
+    setThemaEingabe('');
+  }
+
   return (
     <div className="section">
       <div className="container">
@@ -45,6 +96,49 @@ export default function Lerntechniken() {
           <div style={{ fontSize:'3.5rem', marginBottom:'0.5rem' }}>🧠</div>
           <h1 className="section-title">22 Lerntechniken entdecken</h1>
           <p className="section-subtitle">Für jedes Fach und jeden Lerntyp – mit echten Schulbeispielen.</p>
+        </div>
+
+        <div className="card" style={{ marginBottom:'2rem', padding:'1.5rem' }}>
+          <h3 style={{ fontWeight:800, marginBottom:'0.5rem' }}>✏️ Eigenes Thema eingeben</h3>
+          <p style={{ fontSize:'0.85rem', color:'var(--color-text-light)', marginBottom:'0.75rem' }}>
+            Gib ein aktuelles Lernthema ein – alle Beispiele unten werden dann darauf zugeschnitten.
+          </p>
+
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.5rem', marginBottom:'0.75rem' }}>
+            {THEMEN_VORSCHLAEGE.map(v => (
+              <button key={v} className="btn" onClick={() => { setThemaEingabe(v); themaAnwenden(v); }}
+                style={{ background:'white', border:'2px solid #E5E7EB', fontSize:'0.8rem' }}>
+                {v}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
+            <input
+              type="text"
+              value={themaEingabe}
+              onChange={e => setThemaEingabe(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && themaAnwenden()}
+              placeholder="z. B. Bruchrechnen, Französische Revolution..."
+              style={{ flex:'1 1 250px', padding:'0.6rem 1rem', borderRadius:'50px', border:'2px solid #E5E7EB', fontSize:'0.9rem' }}
+            />
+            <button className="btn" onClick={() => themaAnwenden()} disabled={ladeThema}
+              style={{ background:'linear-gradient(135deg,#6C63FF,#8B5CF6)', color:'white' }}>
+              {ladeThema ? 'Wird erstellt...' : '✨ Beispiele erstellen'}
+            </button>
+            {thema && (
+              <button className="btn" onClick={themaZuruecksetzen} style={{ background:'transparent', border:'2px solid #E5E7EB' }}>
+                Zurücksetzen
+              </button>
+            )}
+          </div>
+
+          {themaFehler && <p style={{ color:'#EF4444', fontSize:'0.85rem', marginTop:'0.5rem' }}>{themaFehler}</p>}
+          {thema && !ladeThema && (
+            <p style={{ marginTop:'0.75rem', fontSize:'0.85rem', fontWeight:700, color:'var(--color-primary)' }}>
+              Aktuelles Thema: {thema}
+            </p>
+          )}
         </div>
 
         <div className="card" style={{ marginBottom:'2.5rem', padding:'1.5rem' }}>
@@ -82,11 +176,6 @@ export default function Lerntechniken() {
               </div>
             </div>
           )}
-          {fach && zeit && empfehlung.length === 0 && (
-            <p style={{ marginTop:'1rem', fontSize:'0.85rem', color:'var(--color-text-light)' }}>
-              Für diese Kombination gibt es leider keine passende Technik mit ausreichend wenig Zeitaufwand. Versuch mehr Zeit auszuwählen.
-            </p>
-          )}
         </div>
 
         <div style={{ display:'flex', flexWrap:'wrap', gap:'0.5rem', marginBottom:'2.5rem', justifyContent:'center' }}>
@@ -99,36 +188,41 @@ export default function Lerntechniken() {
         </div>
 
         <div className="grid-cards">
-          {visible.map(t => (
-            <div key={t.id} id={`technik-${t.id}`} className="card" style={{ cursor:'pointer', borderTop:`4px solid ${mfColors[t.masterfaehigkeiten[0]]||'#6C63FF'}` }} onClick={() => setOpen(open===t.id?null:t.id)}>
-              <div style={{ display:'flex', alignItems:'flex-start', gap:'0.75rem', marginBottom:'0.75rem' }}>
-                <span style={{ fontSize:'2rem', background:'#F8F7FF', borderRadius:'12px', padding:'0.4rem', minWidth:'2.8rem', textAlign:'center' }}>{t.emoji}</span>
-                <div>
-                  <h3 style={{ fontWeight:800, marginBottom:'0.3rem', fontSize:'1.05rem' }}>{t.name}</h3>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:'0.25rem' }}>
-                    {t.masterfaehigkeiten.map(mf => (
-                      <span key={mf} style={{ background:`${mfColors[mf]}20`, color:mfColors[mf], border:`1px solid ${mfColors[mf]}40`, borderRadius:'50px', padding:'0.15rem 0.5rem', fontSize:'0.7rem', fontWeight:700 }}>
-                        {mfEmoji[mf]} {mf}
-                      </span>
-                    ))}
+          {visible.map(t => {
+            const beispiele = thema && themenBeispiele[t.id] ? themenBeispiele[t.id] : t.beispielaufgaben;
+            return (
+              <div key={t.id} id={`technik-${t.id}`} className="card" style={{ cursor:'pointer', borderTop:`4px solid ${mfColors[t.masterfaehigkeiten[0]]||'#6C63FF'}` }} onClick={() => setOpen(open===t.id?null:t.id)}>
+                <div style={{ display:'flex', alignItems:'flex-start', gap:'0.75rem', marginBottom:'0.75rem' }}>
+                  <span style={{ fontSize:'2rem', background:'#F8F7FF', borderRadius:'12px', padding:'0.4rem', minWidth:'2.8rem', textAlign:'center' }}>{t.emoji}</span>
+                  <div>
+                    <h3 style={{ fontWeight:800, marginBottom:'0.3rem', fontSize:'1.05rem' }}>{t.name}</h3>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:'0.25rem' }}>
+                      {t.masterfaehigkeiten.map(mf => (
+                        <span key={mf} style={{ background:`${mfColors[mf]}20`, color:mfColors[mf], border:`1px solid ${mfColors[mf]}40`, borderRadius:'50px', padding:'0.15rem 0.5rem', fontSize:'0.7rem', fontWeight:700 }}>
+                          {mfEmoji[mf]} {mf}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <p style={{ fontSize:'0.9rem', color:'var(--color-text-light)', marginBottom:'0.75rem' }}>{t.kurzbeschreibung}</p>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:'0.8rem', color:'var(--color-text-light)' }}>⏱️ ab {t.zeitMin} Min. · {t.aufwand==='einfach'?'✅ Einfach':'⚡ Mittel'}</span>
-                <span style={{ color:'var(--color-primary)', fontWeight:700, fontSize:'0.85rem' }}>{open===t.id?'▲ Weniger':'▼ Beispiele'}</span>
-              </div>
-              {open===t.id && (
-                <div style={{ marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid #F3F4F6' }} onClick={e => e.stopPropagation()}>
-                  <h4 style={{ fontWeight:800, marginBottom:'0.5rem' }}>📚 Schulbeispiele:</h4>
-                  {t.beispielaufgaben?.map((b,i) => <div key={i} style={{ background:'#F8F7FF', borderRadius:'8px', padding:'0.5rem 0.75rem', marginBottom:'0.4rem', fontSize:'0.85rem' }}>→ {b}</div>)}
-                  {t.tipp && <div style={{ background:`${mfColors[t.masterfaehigkeiten[0]]}15`, borderLeft:`3px solid ${mfColors[t.masterfaehigkeiten[0]]}`, borderRadius:'0 8px 8px 0', padding:'0.6rem 0.9rem', marginTop:'0.75rem', fontSize:'0.85rem', fontWeight:700 }}>💡 {t.tipp}</div>}
-                  {t.id === 'karteikasten' && <Karteikasten />}
+                <p style={{ fontSize:'0.9rem', color:'var(--color-text-light)', marginBottom:'0.75rem' }}>{t.kurzbeschreibung}</p>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <span style={{ fontSize:'0.8rem', color:'var(--color-text-light)' }}>⏱️ ab {t.zeitMin} Min. · {t.aufwand==='einfach'?'✅ Einfach':'⚡ Mittel'}</span>
+                  <span style={{ color:'var(--color-primary)', fontWeight:700, fontSize:'0.85rem' }}>{open===t.id?'▲ Weniger':'▼ Beispiele'}</span>
                 </div>
-              )}
-            </div>
-          ))}
+                {open===t.id && (
+                  <div style={{ marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid #F3F4F6' }} onClick={e => e.stopPropagation()}>
+                    <h4 style={{ fontWeight:800, marginBottom:'0.5rem' }}>
+                      {thema && themenBeispiele[t.id] ? `📚 Beispiele zu "${thema}":` : '📚 Schulbeispiele:'}
+                    </h4>
+                    {beispiele?.map((b,i) => <div key={i} style={{ background:'#F8F7FF', borderRadius:'8px', padding:'0.5rem 0.75rem', marginBottom:'0.4rem', fontSize:'0.85rem' }}>→ {b}</div>)}
+                    {t.tipp && <div style={{ background:`${mfColors[t.masterfaehigkeiten[0]]}15`, borderLeft:`3px solid ${mfColors[t.masterfaehigkeiten[0]]}`, borderRadius:'0 8px 8px 0', padding:'0.6rem 0.9rem', marginTop:'0.75rem', fontSize:'0.85rem', fontWeight:700 }}>💡 {t.tipp}</div>}
+                    {t.id === 'karteikasten' && <Karteikasten />}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
         {visible.length === 0 && <p style={{ textAlign:'center', color:'var(--color-text-light)', marginTop:'2rem' }}>Keine Techniken für diesen Filter gefunden.</p>}
       </div>
