@@ -3,8 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import homeworkRouter from './routes/homework.js';
 import karteikastenRouter from './routes/karteikasten.js';
-// ...
-app.use('/api/karteikasten', karteikastenRouter);
+
 const app = express();
 const PORT = process.env.PORT || 10000;
 
@@ -31,7 +30,9 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/homework', homeworkRouter);
+app.use('/api/karteikasten', karteikastenRouter);
 
 app.listen(PORT, () => {
   console.log(`lernhelden_4-server running on port ${PORT}`);
 });
+
