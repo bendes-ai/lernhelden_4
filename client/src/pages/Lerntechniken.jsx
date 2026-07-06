@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { LERNTECHNIKEN } from '../data/lerntechniken.js';
 import { MASTERFAEHIGKEITEN } from '../data/masterfaehigkeiten.js';
-import Karteikasten from './Karteikasten.jsx';
-
+import Karteikasten from '../components/Karteikasten.jsx';
 const AUFGABENTYPEN = [
   {id:'alle',label:'🔍 Alle Techniken'},{id:'vokabeln',label:'🔤 Vokabeln'},{id:'fakten',label:'📌 Fakten'},
   {id:'prozesse',label:'🔬 Prozesse'},{id:'textverstaendnis',label:'📖 Texte'},{id:'referat',label:'🎤 Referate'},{id:'pruefungsvorbereitung',label:'📝 Prüfungen'}
