@@ -55,3 +55,34 @@ export async function generateFlashcards(text: string): Promise<{ front: string;
     return [];
   }
 }
+export async function generateFlashcardsFromImage(buffer: Buffer): Promise<{ front: string; back: string }[]> {
+  const base64Image = buffer.toString('base64');
+
+  const response = await client.chat.complete({
+    model: 'pixtral-12b-2409',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: 'Erkenne auf diesem Foto alle Vokabelpaare oder Frage/Antwort-Paare (z. B. Wort und Übersetzung, Begriff und Definition). Antworte NUR mit einem JSON-Array wie folgt, ohne Erklärung: [{"front":"Frage oder Wort","back":"Antwort oder Übersetzung"}]'
+          },
+          {
+            type: 'image_url',
+            imageUrl: `data:image/jpeg;base64,${base64Image}`
+          }
+        ]
+      }
+    ]
+  });
+
+  const content = response.choices?.[0]?.message?.content;
+  const raw = typeof content === 'string' ? content : '[]';
+  try {
+    const jsonMatch = raw.match(/\\[[\\s\\S]\*\\]/);
+    return jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+  } catch {
+    return [];
+  }
+}

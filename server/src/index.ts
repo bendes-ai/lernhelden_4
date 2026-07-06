@@ -2,7 +2,9 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import homeworkRouter from './routes/homework.js';
-
+import karteikastenRouter from './routes/karteikasten.js';
+// ...
+app.use('/api/karteikasten', karteikastenRouter);
 const app = express();
 const PORT = process.env.PORT || 10000;
 
