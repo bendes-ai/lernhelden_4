@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
 
 const API_BASE = 'https://lernheldenserver.onrender.com';
 const STORAGE_KEY = 'karteikasten_karten';
@@ -28,6 +29,7 @@ export default function Karteikasten() {
   const [lernModus, setLernModus] = useState(false);
   const [aktuelleKarte, setAktuelleKarte] = useState(null);
   const [zeigeAntwort, setZeigeAntwort] = useState(false);
+  const [nutzerName, setNutzerName] = useState('');
 
   useEffect(() => { speichereKarten(karten); }, [karten]);
 
@@ -91,6 +93,52 @@ export default function Karteikasten() {
 
   function karteLoeschen(id) {
     setKarten(prev => prev.filter(k => k.id !== id));
+  }
+
+  function exportiereFortschrittAlsPDF() {
+    const doc = new jsPDF();
+    const heute = new Date().toLocaleDateString('de-DE');
+    let y = 20;
+
+    doc.setFontSize(18);
+    doc.text('LernHeld – Fortschrittsbericht', 14, y);
+    y += 10;
+    doc.setFontSize(11);
+    doc.text(`Datum: ${heute}`, 14, y);
+    y += 6;
+    if (nutzerName) {
+      doc.text(`Name: ${nutzerName}`, 14, y);
+      y += 6;
+    }
+    y += 4;
+
+    doc.setFontSize(13);
+    doc.text('Fortschritt pro Fach (Karteikasten-System)', 14, y);
+    y += 8;
+    doc.setFontSize(11);
+    faecherUebersicht.forEach(f => {
+      doc.text(`Fach ${f.fach}: ${f.anzahl} Karte(n)`, 14, y);
+      y += 6;
+    });
+
+    y += 6;
+    doc.setFontSize(13);
+    doc.text(`Geübte Karten (${karten.length})`, 14, y);
+    y += 8;
+    doc.setFontSize(10);
+    karten.slice(0, 30).forEach(k => {
+      const zeile = `${k.front} -> ${k.back} (Fach ${k.fach})`;
+      doc.text(zeile.length > 90 ? zeile.slice(0, 87) + '...' : zeile, 14, y);
+      y += 5;
+      if (y > 280) { doc.addPage(); y = 20; }
+    });
+
+    y += 8;
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text('Hinweis: Dieser Export läuft komplett auf deinem Gerät. Es werden keine Daten an einen Server gesendet.', 14, y);
+
+    doc.save(`lernheld-fortschritt-${heute.replace(/\./g, '-')}.pdf`);
   }
 
   const faecherUebersicht = [1, 2, 3, 4, 5].map(f => ({
@@ -172,7 +220,25 @@ export default function Karteikasten() {
           ))}
         </div>
       )}
+
+      {karten.length > 0 && (
+        <div style={{ marginTop: '1.5rem', borderTop: '1px solid #E5E7EB', paddingTop: '1.5rem' }}>
+          <input
+            type="text"
+            placeholder="Name (optional, nur für PDF)"
+            value={nutzerName}
+            onChange={e => setNutzerName(e.target.value)}
+            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #E5E7EB', marginBottom: '0.75rem', fontSize: '0.9rem' }}
+          />
+          <button
+            className="btn"
+            style={{ width: '100%', background: 'transparent', border: '2px solid #6C63FF', color: '#6C63FF' }}
+            onClick={exportiereFortschrittAlsPDF}
+          >
+            📄 Fortschritt als PDF exportieren
+          </button>
+        </div>
+      )}
     </div>
   );
 }
-
