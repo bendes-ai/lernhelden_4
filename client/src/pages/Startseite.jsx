@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MASTERFAEHIGKEITEN } from '../data/masterfaehigkeiten.js';
-
+import { FAECHER_MAPPING, technikenFuerFach } from '../data/faecherMapping.js';
 export default function Startseite() {
   return (
     <div>
@@ -38,7 +38,7 @@ export default function Startseite() {
           <h2 className="section-title" style={{ textAlign:'center' }}>Was dich erwartet</h2>
           <div className="grid-2" style={{ marginTop:'2rem' }}>
             {[
-              {emoji:'🧠',titel:'22 Lerntechniken',text:'Für jeden Lerntyp die passende Methode – erklärt mit echten Schulbeispielen.',link:'/lerntechniken',farbe:'#6C63FF'},
+{emoji:'🧠',titel:'22 Lerntechniken',text:'Für jede Aufgabe die passende Technik – erklärt mit echten Schulbeispielen.',link:'/lerntechniken',farbe:'#6C63FF'},
               {emoji:'🚀',titel:'Persönliche Lern-App',text:'Finde deine beste Technik und tracke deinen Fortschritt – ohne Registrierung.',link:'/lern-app',farbe:'#FF6584'},
               {emoji:'🤖',titel:'KI sicher nutzen',text:'Chancen und Risiken von KI verständlich erklärt – für Kinder und Eltern.',link:'/ki-sicher',farbe:'#43E97B'},
               {emoji:'👨‍👩‍👧',titel:'Für Eltern & Lehrkräfte',text:'Tipps zur Begleitung, Hintergrundinformationen und Unterrichtsmaterial.',link:'/fuer-eltern',farbe:'#FFB347'}
