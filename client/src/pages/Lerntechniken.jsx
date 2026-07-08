@@ -95,7 +95,10 @@ export default function Lerntechniken() {
         <div style={{ textAlign:'center', marginBottom:'2.5rem' }}>
           <div style={{ fontSize:'3.5rem', marginBottom:'0.5rem' }}>🧠</div>
           <h1 className="section-title">22 Lerntechniken entdecken</h1>
-          <p className="section-subtitle">Für jedes Fach und jeden Lerntyp – mit echten Schulbeispielen.</p>
+          <p className="section-subtitle">Für jedes Fach und jede Aufgabe – mit echten Schulbeispielen.</p>
+          <p style={{ fontSize:'0.85rem', color:'var(--color-text-light)', maxWidth:600, margin:'0.5rem auto 0' }}>
+            ℹ️ Wissenschaftlich basiert: Wir empfehlen Techniken nach Aufgabentyp (z. B. Vokabeln merken vs. Text verstehen), nicht nach angeblichen „Lerntypen" – dieses Modell gilt in der Forschung als überholt.
+          </p>
         </div>
 
         <div className="card" style={{ marginBottom:'2rem', padding:'1.5rem' }}>
@@ -229,4 +232,3 @@ export default function Lerntechniken() {
     </div>
   );
 }
-
