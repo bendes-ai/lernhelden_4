@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { KI_CONTENT } from '../data/ki-content.js';
 
+const API_BASE = 'https://lernheldenserver.onrender.com';
+
 export default function KiSicher() {
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizAnswer, setQuizAnswer] = useState(null);
@@ -9,6 +11,49 @@ export default function KiSicher() {
     { frage:'Eine KI sagt dir, dass Wale die größten Tiere ALLER ZEITEN sind. Was tust du?', antworten:['Ich glaube es sofort.','Ich prüfe es in einem Buch oder bei einer Lehrkraft nach.','Ich erzähle es allen weiter.'], richtig:1, erklaerung:'KI kann sich irren! Wichtige Infos immer im Lehrbuch oder bei einer Lehrkraft prüfen.' },
     { frage:'Was bedeutet es, wenn KI "halluziniert"?', antworten:['Die KI schläft.','Die KI erfindet Antworten, die falsch sind.','Die KI malt Bilder.'], richtig:1, erklaerung:'KI-Halluzination = KI erfindet plausibel klingende, aber falsche Informationen. Immer skeptisch bleiben!' }
   ];
+
+  const [wunsch, setWunsch] = useState('');
+  const [coachErgebnis, setCoachErgebnis] = useState(null);
+  const [ladeCoach, setLadeCoach] = useState(false);
+  const [coachFehler, setCoachFehler] = useState('');
+
+  const beispielWuensche = [
+    'Ich will ein Referat über Delfine machen',
+    'Erkläre mir Bruchrechnen',
+    'Schreib mir eine Geschichte über einen Drachen'
+  ];
+
+  async function promptCoachStarten(gewaehlterWunsch) {
+    const finalerWunsch = (gewaehlterWunsch ?? wunsch).trim();
+    if (finalerWunsch.length < 3) {
+      setCoachFehler('Schreib deinen Wunsch mit mindestens 3 Zeichen.');
+      return;
+    }
+    setLadeCoach(true);
+    setCoachFehler('');
+    setCoachErgebnis(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/prompt-coach/generieren`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wunsch: finalerWunsch })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Etwas ist schiefgelaufen.');
+      setCoachErgebnis(data);
+      setWunsch(finalerWunsch);
+    } catch (err) {
+      setCoachFehler(err.message);
+    } finally {
+      setLadeCoach(false);
+    }
+  }
+
+  function coachZuruecksetzen() {
+    setCoachErgebnis(null);
+    setWunsch('');
+    setCoachFehler('');
+  }
 
   return (
     <div className="section">
@@ -57,6 +102,69 @@ export default function KiSicher() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="card" style={{ marginBottom:'2rem', borderTop:'4px solid #21D4FD' }}>
+          <h2 style={{ fontWeight:800, marginBottom:'0.5rem' }}>🎯 Prompt-Coach: So fragst du KI richtig</h2>
+          <p style={{ fontSize:'0.9rem', color:'var(--color-text-light)', marginBottom:'1.25rem' }}>
+            Schreib einen Wunsch oder eine Aufgabe auf – der Prompt-Coach zeigt dir einen schlechten und einen guten Prompt dazu, und erklärt dir den Unterschied!
+          </p>
+
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.5rem', marginBottom:'0.75rem' }}>
+            {beispielWuensche.map(v => (
+              <button key={v} className="btn" onClick={() => { setWunsch(v); promptCoachStarten(v); }}
+                style={{ background:'white', border:'2px solid #E5E7EB', fontSize:'0.8rem' }}>
+                {v}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
+            <input
+              type="text"
+              value={wunsch}
+              onChange={e => setWunsch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && promptCoachStarten()}
+              placeholder="z. B. Ich will ein Referat über Delfine machen"
+              maxLength={300}
+              style={{ flex:'1 1 250px', padding:'0.6rem 1rem', borderRadius:'50px', border:'2px solid #E5E7EB', fontSize:'0.9rem' }}
+            />
+            <button className="btn" onClick={() => promptCoachStarten()} disabled={ladeCoach}
+              style={{ background:'linear-gradient(135deg,#21D4FD,#6C63FF)', color:'white' }}>
+              {ladeCoach ? 'Wird erstellt...' : '✨ Prompt-Coach starten'}
+            </button>
+            {(coachErgebnis || coachFehler) && (
+              <button className="btn" onClick={coachZuruecksetzen} style={{ background:'transparent', border:'2px solid #E5E7EB' }}>
+                Zurücksetzen
+              </button>
+            )}
+          </div>
+
+          {coachFehler && <p style={{ color:'#EF4444', fontSize:'0.85rem', marginTop:'0.5rem' }}>{coachFehler}</p>}
+
+          {coachErgebnis && (
+            <div style={{ marginTop:'1.5rem', paddingTop:'1.5rem', borderTop:'1px solid #F3F4F6' }}>
+              <div style={{ background:'rgba(255,101,132,0.1)', border:'2px solid rgba(255,101,132,0.4)', borderRadius:'12px', padding:'1rem', marginBottom:'1rem' }}>
+                <h4 style={{ fontWeight:800, color:'#FF6584', marginBottom:'0.4rem' }}>❌ Schlechter Prompt</h4>
+                <p style={{ fontSize:'0.95rem', fontStyle:'italic' }}>"{coachErgebnis.schlechterPrompt}"</p>
+              </div>
+
+              <div style={{ background:'rgba(67,233,123,0.1)', border:'2px solid rgba(67,233,123,0.4)', borderRadius:'12px', padding:'1rem', marginBottom:'1rem' }}>
+                <h4 style={{ fontWeight:800, color:'#43E97B', marginBottom:'0.4rem' }}>✅ Guter Prompt</h4>
+                <p style={{ fontSize:'0.95rem', fontStyle:'italic' }}>"{coachErgebnis.guterPrompt}"</p>
+              </div>
+
+              <div style={{ background:'#F8F7FF', borderRadius:'12px', padding:'1rem', marginBottom:'1rem' }}>
+                <h4 style={{ fontWeight:800, marginBottom:'0.4rem' }}>💬 Warum ist der gute Prompt besser?</h4>
+                <p style={{ fontSize:'0.95rem' }}>{coachErgebnis.erklaerung}</p>
+              </div>
+
+              <div style={{ background:'rgba(108,99,255,0.1)', borderLeft:'4px solid #6C63FF', borderRadius:'0 12px 12px 0', padding:'1rem' }}>
+                <h4 style={{ fontWeight:800, color:'#6C63FF', marginBottom:'0.4rem' }}>💡 Dein Tipp für nächstes Mal</h4>
+                <p style={{ fontSize:'0.95rem' }}>{coachErgebnis.tipp}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="card" style={{ marginBottom:'2rem', background:'linear-gradient(135deg,#1A1A2E,#2D2B55)', color:'white' }}>
