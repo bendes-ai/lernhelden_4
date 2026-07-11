@@ -2,7 +2,7 @@
 //  promptCoach.ts
 //
 //
-//  Created by Bernd Trißler
+//  Created by Bernd Trißler.
 //
 import { Router } from 'express';
 import { generatePromptCoachResponse } from '../services/mistral.js';
