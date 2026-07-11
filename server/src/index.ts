@@ -5,6 +5,7 @@ import homeworkRouter from './routes/homework.js';
 import karteikastenRouter from './routes/karteikasten.js';
 import themenbeispieleRouter from './routes/themenbeispiele.js';
 import promptCoachRouter from './routes/promptCoach.js';
+import sicherheitscheckRouter from './routes/sicherheitscheck.js';
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -35,6 +36,7 @@ app.use('/api/homework', homeworkRouter);
 app.use('/api/karteikasten', karteikastenRouter);
 app.use('/api/themenbeispiele', themenbeispieleRouter);
 app.use('/api/prompt-coach', promptCoachRouter);
+app.use('/api/sicherheitscheck', sicherheitscheckRouter);
 
 app.listen(PORT, () => {
   console.log(`lernhelden_4-server running on port ${PORT}`);
