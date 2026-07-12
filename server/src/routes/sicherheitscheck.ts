@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { erkenneNamenPerModell } from '../services/huggingface.js';
 
 const router = Router();
 
@@ -12,7 +13,7 @@ type TrefferArt =
   | 'Benutzername'
   | 'Link';
 
-function pruefeSicherheit(text: string) {
+function pruefeRegeln(text: string) {
   const input = text.trim();
   const lower = input.toLowerCase();
   const treffer = new Set<TrefferArt>();
@@ -29,46 +30,29 @@ function pruefeSicherheit(text: string) {
   if (plzOrtRegex.test(input) || strasseRegex.test(input)) treffer.add('Adresse');
 
   const schulWoerter = [
-    'meine schule',
-    'unsere schule',
-    'ich gehe auf die',
-    'ich bin in der schule',
-    'gymnasium',
-    'realschule',
-    'mittelschule',
-    'grundschule',
-    'hauptschule'
+    'meine schule', 'unsere schule', 'ich gehe auf die', 'ich bin in der schule',
+    'gymnasium', 'realschule', 'mittelschule', 'grundschule', 'hauptschule'
   ];
   if (schulWoerter.some(w => lower.includes(w))) treffer.add('Schule');
 
   const passwortWoerter = [
-    'mein passwort',
-    'mein kennwort',
-    'mein login',
-    'mein benutzername',
-    'mein account',
-    'meine zugangsdaten'
+    'mein passwort', 'mein kennwort', 'mein login', 'mein benutzername',
+    'mein account', 'meine zugangsdaten'
   ];
-  if (passwortWoerter.some(w => lower.includes(w))) {
-    treffer.add('Passwort');
-  }
-
+  if (passwortWoerter.some(w => lower.includes(w))) treffer.add('Passwort');
   if (lower.includes('benutzername')) treffer.add('Benutzername');
 
-  const nameMuster = [
-    /ich heiße\s+[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)+/i,
-    /mein name ist\s+[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)+/i,
-    /\b[A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+\b/
-  ];
-  if (
-    nameMuster.some(r => r.test(input)) &&
-    (lower.includes('ich heiße') || lower.includes('mein name ist'))
-  ) {
+  const nameHinweise = ['ich heiße', 'mein name ist'];
+  if (nameHinweise.some(w => lower.includes(w))) {
     treffer.add('Voller Name');
   }
 
+  return treffer;
+}
+
+function stufeUndWarnung(treffer: Set<TrefferArt>) {
   const stufe =
-    treffer.has('Passwort') || treffer.has('Adresse') || treffer.has('Telefonnummer') || treffer.has('E-Mail')
+    treffer.has('Passwort') || treffer.has('Adresse') || treffer.has('Telefonnummer') || treffer.has('E-Mail') || treffer.has('Voller Name')
       ? 'kritisch'
       : treffer.size > 0
       ? 'warnung'
@@ -76,18 +60,13 @@ function pruefeSicherheit(text: string) {
 
   let warnung = 'Sieht gut aus. Bitte verrate trotzdem keine privaten Daten.';
   if (stufe === 'warnung') {
-    warnung = 'Vorsicht: Bitte schreibe lieber keine privaten Daten wie deinen Namen oder deine Schule.';
+    warnung = 'Vorsicht: Bitte schreibe lieber keine privaten Daten wie deine Schule.';
   }
   if (stufe === 'kritisch') {
-    warnung = 'Stopp: Bitte entferne private Daten wie Adresse, Telefonnummer, E-Mail oder Passwort.';
+    warnung = 'Stopp: Bitte entferne private Daten wie deinen Namen, Adresse, Telefonnummer, E-Mail oder Passwort.';
   }
 
-  return {
-    safe: treffer.size === 0,
-    stufe,
-    warnung,
-    treffer: Array.from(treffer)
-  };
+  return { stufe, warnung };
 }
 
 router.post('/', async (req, res) => {
@@ -107,8 +86,24 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const ergebnis = pruefeSicherheit(text);
-    return res.json(ergebnis);
+    const treffer = pruefeRegeln(text);
+
+    if (text.trim().length <= 200) {
+      const entitaeten = await erkenneNamenPerModell(text.trim());
+      const hatPerson = entitaeten.some(e => e.entity_group === 'PER' && e.score > 0.6);
+      if (hatPerson) {
+        treffer.add('Voller Name');
+      }
+    }
+
+    const { stufe, warnung } = stufeUndWarnung(treffer);
+
+    return res.json({
+      safe: treffer.size === 0,
+      stufe,
+      warnung,
+      treffer: Array.from(treffer)
+    });
   } catch (err) {
     console.error('[sicherheitscheck] Fehler:', err);
     return res.status(500).json({ error: 'Bei der Sicherheitsprüfung ist ein Fehler aufgetreten.' });
