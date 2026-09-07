@@ -1,0 +1,14 @@
+[build]
+  base = "client"
+  command = "npm install && npm run build"
+  publish = "client/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# React Router (BrowserRouter) benoetigt einen Fallback auf index.html,
+# damit direkte Aufrufe von z. B. /lerntechniken nicht zu 404 fuehren.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
