@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { MASTERFAEHIGKEITEN } from '../data/masterfaehigkeiten.js';
 import { FAECHER_MAPPING, technikenFuerFach } from '../data/faecherMapping.js';
+
 export default function Startseite() {
   return (
     <div>
@@ -38,7 +39,7 @@ export default function Startseite() {
           <h2 className="section-title" style={{ textAlign:'center' }}>Was dich erwartet</h2>
           <div className="grid-2" style={{ marginTop:'2rem' }}>
             {[
-{emoji:'🧠',titel:'22 Lerntechniken',text:'Für jede Aufgabe die passende Technik – erklärt mit echten Schulbeispielen.',link:'/lerntechniken',farbe:'#6C63FF'},
+              {emoji:'🧠',titel:'22 Lerntechniken',text:'Für jede Aufgabe die passende Technik – erklärt mit echten Schulbeispielen.',link:'/lerntechniken',farbe:'#6C63FF'},
               {emoji:'🚀',titel:'Persönliche Lern-App',text:'Finde deine beste Technik und tracke deinen Fortschritt – ohne Registrierung.',link:'/lern-app',farbe:'#FF6584'},
               {emoji:'🤖',titel:'KI sicher nutzen',text:'Chancen und Risiken von KI verständlich erklärt – für Kinder und Eltern.',link:'/ki-sicher',farbe:'#43E97B'},
               {emoji:'👨‍👩‍👧',titel:'Für Eltern & Lehrkräfte',text:'Tipps zur Begleitung, Hintergrundinformationen und Unterrichtsmaterial.',link:'/fuer-eltern',farbe:'#FFB347'}
@@ -51,6 +52,31 @@ export default function Startseite() {
                   <p style={{ color:k.farbe, fontWeight:700, marginTop:'0.75rem', fontSize:'0.9rem' }}>Mehr erfahren →</p>
                 </div>
               </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container">
+          <h2 className="section-title" style={{ textAlign:'center' }}>Jedes Fach braucht andere Techniken 🎯</h2>
+          <p className="section-subtitle" style={{ textAlign:'center' }}>Statt nach Lerntyp wählen wir nach Aufgabentyp – so passt die Technik zum Fach.</p>
+          <div className="grid-cards" style={{ marginTop:'2rem' }}>
+            {FAECHER_MAPPING.map(fach => (
+              <div key={fach.fach} className="card" style={{ borderTop:`4px solid ${fach.farbe}` }}>
+                <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>{fach.emoji}</div>
+                <h3 style={{ fontWeight:800, marginBottom:'0.75rem', color:fach.farbe }}>{fach.fach}</h3>
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+                  {technikenFuerFach(fach).map(t => (
+                    <span key={t.id} style={{ fontSize:'0.9rem', color:'var(--color-text-light)' }}>
+                      {t.emoji} {t.name}
+                    </span>
+                  ))}
+                </div>
+                <Link to="/lerntechniken" style={{ color:fach.farbe, fontWeight:700, marginTop:'1rem', display:'inline-block', fontSize:'0.9rem', textDecoration:'none' }}>
+                  Alle Techniken für {fach.fach} →
+                </Link>
+              </div>
             ))}
           </div>
         </div>

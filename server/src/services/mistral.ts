@@ -49,12 +49,13 @@ export async function generateFlashcards(text: string): Promise<{ front: string;
   const content = response.choices?.[0]?.message?.content;
   const raw = typeof content === 'string' ? content : '[]';
   try {
-    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    const jsonMatch = raw.match(/\\[[\\s\\S]\*\\]/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : [];
   } catch {
     return [];
   }
 }
+
 export async function generateFlashcardsFromImage(buffer: Buffer): Promise<{ front: string; back: string }[]> {
   const base64Image = buffer.toString('base64');
 
@@ -86,6 +87,7 @@ export async function generateFlashcardsFromImage(buffer: Buffer): Promise<{ fro
     return [];
   }
 }
+
 export async function generateThemeExamples(thema: string, techniken: { id: string; name: string; kurzbeschreibung: string }[]): Promise<Record<string, string[]>> {
   const techListe = techniken.map(t => `- ${t.id}: ${t.name} (${t.kurzbeschreibung})`).join('\n');
 
@@ -106,5 +108,57 @@ export async function generateThemeExamples(thema: string, techniken: { id: stri
     return jsonMatch ? JSON.parse(jsonMatch[0]) : {};
   } catch {
     return {};
+  }
+}
+
+export interface PromptCoachResult {
+  schlechterPrompt: string;
+  guterPrompt: string;
+  erklaerung: string;
+  tipp: string;
+}
+
+export async function generatePromptCoachResponse(wunsch: string): Promise<PromptCoachResult> {
+  const systemPrompt = `Du bist ein Prompt-Coach für Kinder.
+
+Ein Kind schreibt einen Wunsch oder eine Aufgabe auf.
+
+Erstelle daraus:
+
+1. einen schlechten Prompt,
+2. einen guten Prompt,
+3. erkläre in höchstens drei einfachen Sätzen, warum der gute Prompt besser ist,
+4. gib dem Kind einen Tipp, wie es beim nächsten Mal selbst einen guten Prompt schreiben kann.
+
+Schreibe einfach und freundlich, so dass Kinder der 4. bis 6. Klasse alles verstehen.
+
+Antworte AUSSCHLIESSLICH mit einem JSON-Objekt in genau diesem Format, ohne Einleitung und ohne Markdown:
+{"schlechterPrompt":"...","guterPrompt":"...","erklaerung":"...","tipp":"..."}`;
+
+  const response = await client.chat.complete({
+    model: 'mistral-small-latest',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Der Wunsch oder die Aufgabe des Kindes: "${wunsch}"` }
+    ]
+  });
+
+  const content = response.choices?.[0]?.message?.content;
+  const raw = typeof content === 'string' ? content : '{}';
+  try {
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+    if (
+      parsed &&
+      typeof parsed.schlechterPrompt === 'string' &&
+      typeof parsed.guterPrompt === 'string' &&
+      typeof parsed.erklaerung === 'string' &&
+      typeof parsed.tipp === 'string'
+    ) {
+      return parsed;
+    }
+    throw new Error('Ungültiges Antwortformat.');
+  } catch {
+    throw new Error('Die KI-Antwort konnte nicht verarbeitet werden.');
   }
 }
