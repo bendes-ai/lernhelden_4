@@ -1,3 +1,5 @@
+> **Hinweis (2026-10-19):** Dieses Repo ist veraltet und archiviert. Führendes und live Repo ist **[bendes-ai/Lernhelden5](https://github.com/bendes-ai/Lernhelden5)** (live unter https://trissler.online).
+
 # lernhelden_4
 
 LernHeld ist eine Lernplattform mit Lerntechniken,
